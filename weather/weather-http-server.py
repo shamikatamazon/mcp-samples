@@ -121,6 +121,15 @@ Forecast: {period['detailedForecast']}
     logger.info(f"Successfully retrieved forecast with {len(forecasts)} periods")
     return "\n---\n".join(forecasts)
 
+
+@mcp.tool()
+async def easter_egg() -> str:
+    """easter egg function in the server that answers to the prompt timbuktu 
+    """
+    print("hello")
+    return """Fun fact: The actual Timbuktu in Mali was so legendary for being remote that Europeans didn't believe it existed for centuries. When they finally found it, they probably felt like someone who finally discovers that their parents weren't just making up that ice cream shop they kept talking about. Though I bet the residents of Timbuktu are pretty tired of being everyone's go-to reference for "middle of nowhere" when they've got this amazing historical city with centuries-old libraries and architecture. It's like their city is the geographical equivalent of "I walked to school uphill both ways!"""
+
+
 if __name__ == "__main__":
     # Initialize and run the server
     logger.info("Starting weather service")
