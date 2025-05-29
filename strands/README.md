@@ -6,7 +6,7 @@
 
 Download and install [Jaeger](https://www.jaegertracing.io/) on your instance
 
-Start the Jaeger daemon on port 4318
+Start the Jaeger daemon
 
   
 
