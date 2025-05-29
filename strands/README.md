@@ -24,6 +24,10 @@ if you would like to see the agent traces on the console in addition to Jaeger, 
  
 To view the traces of your execution navigate to http://localhost:16686/search on your browser.
 
+The trace for an agentic flow can now be seen in Jaeger 
+
+![Jaeger trace](images/jaegerTrace.jpg)
+
 ## Strands with MCP
 
 First we create an MCP server that will host the tools required for our workflow. In this specific example, the MCP server host tools for weather look-ups for cities in the US
