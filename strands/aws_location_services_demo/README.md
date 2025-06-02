@@ -1,6 +1,6 @@
 # TravelGuide AI Web Application
 
-This web application provides a browser-based interface for interacting with the TravelGuide AI assistant, which uses AWS Location Services through MCP (Modular Capability Provider).
+This web application provides a browser-based interface for interacting with the TravelGuide AI assistant, which uses AWS Location Services through MCP.
 
 ## Features
 
