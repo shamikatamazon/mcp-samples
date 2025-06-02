@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelGuide AI Assistant</title>
+    <!-- Markdown parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .input-area {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            font-family: inherit;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .response-area {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .status-ready {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-initializing {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .metrics {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TravelGuide AI Assistant</h1>
+        
+        <div id="status" class="status status-initializing">
+            Initializing AI agent... Please wait.
+        </div>
+        
+        <div class="input-area">
+            <textarea id="query" placeholder="Ask about travel itineraries, routes, attractions, or any travel-related questions..."></textarea>
+            <button id="submit-btn" disabled>Ask TravelGuide</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Processing your request...</p>
+        </div>
+        
+        <div class="response-area" id="response-area">
+            <h3>TravelGuide's Response:</h3>
+            <div id="response"></div>
+            <div class="metrics" id="metrics"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const queryInput = document.getElementById('query');
+            const submitBtn = document.getElementById('submit-btn');
+            const loading = document.getElementById('loading');
+            const responseArea = document.getElementById('response-area');
+            const responseDiv = document.getElementById('response');
+            const metricsDiv = document.getElementById('metrics');
+            const statusDiv = document.getElementById('status');
+            
+            // Check agent status periodically
+            function checkAgentStatus() {
+                fetch('/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ready) {
+                            statusDiv.className = 'status status-ready';
+                            statusDiv.textContent = 'AI agent is ready! Ask your travel questions below.';
+                            submitBtn.disabled = false;
+                        } else {
+                            setTimeout(checkAgentStatus, 2000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking agent status:', error);
+                        setTimeout(checkAgentStatus, 5000);
+                    });
+            }
+            
+            // Start checking status
+            checkAgentStatus();
+            
+            // Handle form submission
+            submitBtn.addEventListener('click', function() {
+                const query = queryInput.value.trim();
+                if (!query) return;
+                
+                // Show loading indicator
+                loading.style.display = 'block';
+                responseArea.style.display = 'none';
+                submitBtn.disabled = true;
+                
+                // Send request to server
+                fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading indicator
+                    loading.style.display = 'none';
+                    responseArea.style.display = 'block';
+                    submitBtn.disabled = false;
+                    
+                    // Display response with Markdown rendering
+                    responseDiv.innerHTML = marked.parse(data.response);
+                    
+                    // Display metrics if available
+                    if (data.metrics) {
+                        metricsDiv.innerHTML = `
+                            <strong>Metrics:</strong><br>
+                            Total tokens: ${data.metrics.total_tokens}<br>
+                            Execution time: ${data.metrics.execution_time} seconds<br>
+                            Tools used: ${data.metrics.tools_used.join(', ') || 'None'}
+                        `;
+                    } else {
+                        metricsDiv.textContent = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loading.style.display = 'none';
+                    submitBtn.disabled = false;
+                    responseDiv.textContent = 'An error occurred while processing your request. Please try again.';
+                    responseArea.style.display = 'block';
+                });
+            });
+            
+            // Allow Enter key to submit
+            queryInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey && !submitBtn.disabled) {
+                    e.preventDefault();
+                    submitBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
