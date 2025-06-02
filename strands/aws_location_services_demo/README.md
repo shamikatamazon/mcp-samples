@@ -5,6 +5,7 @@ This web application provides a browser-based interface for interacting with the
 ## Features
 
 - Web-based interface for querying the TravelGuide AI assistant
+- User authentication for secure access
 - Real-time status updates on agent initialization
 - Display of response metrics (tokens used, execution time, tools used)
 - Responsive design for desktop and mobile browsers
@@ -15,7 +16,7 @@ This web application provides a browser-based interface for interacting with the
 - MCP server running locally on port 8080
 - AWS credentials configured for Bedrock access
 
-## Installation
+## Local Installation
 
 1. Install the required dependencies:
 
@@ -32,11 +33,14 @@ cd aws-location-mcp-server/
 fastmcp run server.py:mcp --transport sse --port 8080 --host 0.0.0.0 --log-level debug
 ```
 
-Download and install [Jaeger](https://www.jaegertracing.io/) on your instance
+3. Set environment variables for authentication:
 
-Start the Jaeger daemon
+```bash
+export FLASK_SECRET_KEY="your-secret-key-here"
+export ADMIN_PASSWORD="your-admin-password"
+```
 
-## Usage
+## Local Usage
 
 1. Start the web application:
 
@@ -50,9 +54,31 @@ python awsLocationWithMCP_web.py
 http://localhost:8081
 ```
 
-3. Wait for the agent to initialize (indicated by the status bar)
+3. Log in with username "admin" and the password you set in the environment variable
 
-4. Enter your travel-related query in the text area and click "Ask TravelGuide"
+4. Wait for the agent to initialize (indicated by the status bar)
+
+5. Enter your travel-related query in the text area and click "Ask TravelGuide"
+
+## AWS Deployment
+
+You can deploy this application to AWS using the provided CloudFormation template:
+
+1. Navigate to the AWS CloudFormation console
+
+2. Create a new stack and upload the `cloudformation.yaml` file
+
+3. Fill in the required parameters:
+   - VPC ID
+   - Subnet IDs (at least two, in different AZs)
+   - EC2 Key Pair name
+   - Instance type (t3.medium recommended)
+   - Admin password (for web app login)
+   - Flask secret key (for session encryption)
+
+4. Create the stack and wait for it to complete
+
+5. Access your application using the CloudFront URL provided in the stack outputs
 
 ## Example Queries
 
@@ -66,3 +92,4 @@ http://localhost:8081
 - The application uses the Nova Pro model from Amazon Bedrock by default
 - The agent initialization may take a few moments when first starting the application
 - All queries are processed through the MCP server which provides access to AWS Location Services
+- For production use, consider implementing a more robust authentication system

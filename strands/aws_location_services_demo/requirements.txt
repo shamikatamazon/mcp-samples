@@ -1,3 +1,5 @@
 flask==2.3.3
-strands
-fastmcp
+werkzeug==2.3.7
+flask-login==0.6.2
+strands-agents
+gunicorn==21.2.0

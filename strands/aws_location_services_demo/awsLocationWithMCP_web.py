@@ -1,10 +1,12 @@
 from strands import Agent
 import os
+import secrets
 from strands.telemetry.tracer import get_tracer
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
 from mcp.client.sse import sse_client
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import threading
 import time
 
@@ -35,6 +37,28 @@ claude_agent_model = BedrockModel(
 
 # Initialize Flask app
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(16))
+
+# Configure Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Simple user model for authentication
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+# User database - replace with a proper database in production
+users = {
+    'admin': {'password': os.environ.get('ADMIN_PASSWORD', 'password123')}
+}
+
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id in users:
+        return User(user_id)
+    return None
 
 # Global variables
 agent = None
@@ -123,12 +147,38 @@ def initialize_agent():
 # Start agent initialization in a separate thread
 threading.Thread(target=initialize_agent).start()
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Handle user login."""
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username in users and users[username]['password'] == password:
+            user = User(username)
+            login_user(user)
+            return redirect(url_for('index'))
+        else:
+            error = 'Invalid credentials'
+    
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+@login_required
+def logout():
+    """Handle user logout."""
+    logout_user()
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     """Render the main page."""
     return render_template('index.html')
 
 @app.route('/ask', methods=['POST'])
+@login_required
 def ask_agent():
     """Process user query and return agent response."""
     if not agent_ready:
@@ -188,9 +238,15 @@ def ask_agent():
         })
 
 @app.route('/status')
+@login_required
 def agent_status():
     """Check if the agent is ready."""
     return jsonify({'ready': agent_ready})
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for the load balancer."""
+    return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
     # Wait for agent to initialize before starting the server
@@ -199,4 +255,4 @@ if __name__ == '__main__':
         pass
     
     print("Starting web server...")
-    app.run(host='0.0.0.0', port=8081, debug=True)
+    app.run(host='0.0.0.0', port=8081, debug=False)

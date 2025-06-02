@@ -26,6 +26,25 @@
             text-align: center;
             color: #2c3e50;
         }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
         .input-area {
             margin-bottom: 20px;
         }
@@ -98,11 +117,53 @@
             font-size: 14px;
             color: #7f8c8d;
         }
+        /* Markdown styling */
+        #response h1, #response h2, #response h3 {
+            color: #2c3e50;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+        #response ul, #response ol {
+            padding-left: 20px;
+        }
+        #response code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        #response pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        #response blockquote {
+            border-left: 3px solid #ddd;
+            margin-left: 0;
+            padding-left: 15px;
+            color: #666;
+        }
+        #response table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        #response th, #response td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #response th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>TravelGuide AI Assistant</h1>
+        <div class="header">
+            <h1>TravelGuide AI Assistant</h1>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
         
         <div id="status" class="status status-initializing">
             Initializing AI agent... Please wait.
@@ -138,9 +199,15 @@
             // Check agent status periodically
             function checkAgentStatus() {
                 fetch('/status')
-                    .then(response => response.json())
+                    .then(response => {
+                        if (response.redirected) {
+                            window.location.href = response.url;
+                            return;
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        if (data.ready) {
+                        if (data && data.ready) {
                             statusDiv.className = 'status status-ready';
                             statusDiv.textContent = 'AI agent is ready! Ask your travel questions below.';
                             submitBtn.disabled = false;
@@ -175,8 +242,16 @@
                     },
                     body: JSON.stringify({ query: query })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    if (!data) return;
+                    
                     // Hide loading indicator
                     loading.style.display = 'none';
                     responseArea.style.display = 'block';
